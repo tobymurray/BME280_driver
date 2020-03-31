@@ -52,8 +52,6 @@
 **************************************************************************/
 
 #include "bme280.h"
-static struct bme280_t *p_bme280; /**< pointer to BME280 */
-
 /*!
  *	@brief This function is used for initialize
  *	the bus read and bus write functions
@@ -79,15 +77,12 @@ static struct bme280_t *p_bme280; /**< pointer to BME280 */
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_init(struct bme280_t *bme280)
+BME280_RETURN_FUNCTION_TYPE bme280_init(struct bme280_t * p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
 	u8 v_data_u8 = BME280_INIT_VALUE;
 	u8 v_chip_id_read_count = BME280_CHIP_ID_READ_COUNT;
-
-	/* assign BME280 ptr */
-	p_bme280 = bme280;
 
 	while (v_chip_id_read_count > 0) {
 
@@ -111,7 +106,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_init(struct bme280_t *bme280)
 
 	if (com_rslt == BME280_CHIP_ID_READ_SUCCESS) {
 		/* readout bme280 calibparam structure */
-		com_rslt += bme280_get_calib_param();
+		com_rslt += bme280_get_calib_param(p_bme280);
 	}
 	return com_rslt;
 }
@@ -133,7 +128,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_init(struct bme280_t *bme280)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_read_uncomp_temperature(
-s32 *v_uncomp_temperature_s32)
+s32 *v_uncomp_temperature_s32, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -176,7 +171,7 @@ s32 *v_uncomp_temperature_s32)
  *  @return Returns the actual temperature
  *
 */
-s32 bme280_compensate_temperature_int32(s32 v_uncomp_temperature_s32)
+s32 bme280_compensate_temperature_int32(s32 v_uncomp_temperature_s32, struct bme280_t *p_bme280)
 {
 	s32 v_x1_u32r = BME280_INIT_VALUE;
 	s32 v_x2_u32r = BME280_INIT_VALUE;
@@ -220,12 +215,12 @@ s32 bme280_compensate_temperature_int32(s32 v_uncomp_temperature_s32)
  *
 */
 s16 bme280_compensate_temperature_int32_sixteen_bit_output(
-s32 v_uncomp_temperature_s32)
+s32 v_uncomp_temperature_s32, struct bme280_t *p_bme280)
 {
 	s16 temperature = BME280_INIT_VALUE;
 
 	bme280_compensate_temperature_int32(
-	v_uncomp_temperature_s32);
+	v_uncomp_temperature_s32, p_bme280);
 	temperature  = (s16)((((
 	p_bme280->cal_param.t_fine - 122880) * 25) + 128)
 	>> BME280_SHIFT_BIT_POSITION_BY_08_BITS);
@@ -252,7 +247,7 @@ s32 v_uncomp_temperature_s32)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_read_uncomp_pressure(
-s32 *v_uncomp_pressure_s32)
+s32 *v_uncomp_pressure_s32, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -296,7 +291,7 @@ s32 *v_uncomp_pressure_s32)
  *  @return Return the actual pressure output as u32
  *
 */
-u32 bme280_compensate_pressure_int32(s32 v_uncomp_pressure_s32)
+u32 bme280_compensate_pressure_int32(s32 v_uncomp_pressure_s32, struct bme280_t *p_bme280)
 {
 	s32 v_x1_u32 = BME280_INIT_VALUE;
 	s32 v_x2_u32 = BME280_INIT_VALUE;
@@ -387,7 +382,7 @@ u32 bme280_compensate_pressure_int32(s32 v_uncomp_pressure_s32)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_read_uncomp_humidity(
-s32 *v_uncomp_humidity_s32)
+s32 *v_uncomp_humidity_s32, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -426,7 +421,7 @@ s32 *v_uncomp_humidity_s32)
  *  @return Return the actual relative humidity output as u32
  *
 */
-u32 bme280_compensate_humidity_int32(s32 v_uncomp_humidity_s32)
+u32 bme280_compensate_humidity_int32(s32 v_uncomp_humidity_s32, struct bme280_t *p_bme280)
 {
 	s32 v_x1_u32 = BME280_INIT_VALUE;
 
@@ -472,12 +467,12 @@ u32 bme280_compensate_humidity_int32(s32 v_uncomp_humidity_s32)
  *
 */
 u16 bme280_compensate_humidity_int32_sixteen_bit_output(
-s32 v_uncomp_humidity_s32)
+s32 v_uncomp_humidity_s32, struct bme280_t *p_bme280)
 {
 	u32 v_x1_u32 = BME280_INIT_VALUE;
 	u16 v_x2_u32 = BME280_INIT_VALUE;
 
-	v_x1_u32 =  bme280_compensate_humidity_int32(v_uncomp_humidity_s32);
+	v_x1_u32 =  bme280_compensate_humidity_int32(v_uncomp_humidity_s32, p_bme280);
 	v_x2_u32 = (u16)(v_x1_u32 >> BME280_SHIFT_BIT_POSITION_BY_01_BIT);
 	return v_x2_u32;
 }
@@ -502,7 +497,7 @@ s32 v_uncomp_humidity_s32)
 */
 BME280_RETURN_FUNCTION_TYPE bme280_read_uncomp_pressure_temperature_humidity(
 s32 *v_uncomp_pressure_s32,
-s32 *v_uncomp_temperature_s32, s32 *v_uncomp_humidity_s32)
+s32 *v_uncomp_temperature_s32, s32 *v_uncomp_humidity_s32, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -581,7 +576,7 @@ s32 *v_uncomp_temperature_s32, s32 *v_uncomp_humidity_s32)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_read_pressure_temperature_humidity(
-u32 *v_pressure_u32, s32 *v_temperature_s32, u32 *v_humidity_u32)
+u32 *v_pressure_u32, s32 *v_temperature_s32, u32 *v_humidity_u32, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -597,15 +592,15 @@ u32 *v_pressure_u32, s32 *v_temperature_s32, u32 *v_humidity_u32)
 			com_rslt =
 			bme280_read_uncomp_pressure_temperature_humidity(
 			&v_uncomp_pressure_s32, &v_uncom_temperature_s32,
-			&v_uncom_humidity_s32);
+			&v_uncom_humidity_s32, p_bme280);
 			/* read the true pressure, temperature and humidity*/
 			*v_temperature_s32 =
 			bme280_compensate_temperature_int32(
-			v_uncom_temperature_s32);
+			v_uncom_temperature_s32, p_bme280);
 			*v_pressure_u32 = bme280_compensate_pressure_int32(
-			v_uncomp_pressure_s32);
+			v_uncomp_pressure_s32, p_bme280);
 			*v_humidity_u32 = bme280_compensate_humidity_int32(
-			v_uncom_humidity_s32);
+			v_uncom_humidity_s32, p_bme280);
 		}
 	return com_rslt;
 }
@@ -640,7 +635,7 @@ u32 *v_pressure_u32, s32 *v_temperature_s32, u32 *v_humidity_u32)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_get_calib_param(void)
+BME280_RETURN_FUNCTION_TYPE bme280_get_calib_param(struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -781,7 +776,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_get_calib_param(void)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_get_oversamp_temperature(
-u8 *v_value_u8)
+u8 *v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -827,7 +822,7 @@ u8 *v_value_u8)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_set_oversamp_temperature(
-u8 v_value_u8)
+u8 v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -843,9 +838,9 @@ u8 v_value_u8)
 			v_data_u8 =
 			BME280_SET_BITSLICE(v_data_u8,
 			BME280_CTRL_MEAS_REG_OVERSAMP_TEMPERATURE, v_value_u8);
-			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8);
+			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8, p_bme280);
 			if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-				com_rslt += bme280_set_soft_rst();
+				com_rslt += bme280_set_soft_rst(p_bme280);
 				p_bme280->delay_msec(BME280_3MS_DELAY);
 				/* write previous value
 				of configuration register*/
@@ -853,7 +848,7 @@ u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CONFIG_REG,
 				&v_pre_config_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value
 				of humidity oversampling*/
 				v_pre_ctrl_hum_value_u8 =
@@ -861,12 +856,12 @@ u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 				&v_pre_ctrl_hum_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous and updated value
 				of configuration register*/
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			} else {
 				com_rslt = p_bme280->BME280_BUS_WRITE_FUNC(
 				p_bme280->dev_addr,
@@ -877,18 +872,18 @@ u8 v_value_u8)
 				/* read the control measurement register value*/
 				com_rslt = bme280_read_register(
 					BME280_CTRL_MEAS_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->ctrl_meas_reg = v_data_u8;
 				/* read the control humidity register value*/
 				com_rslt += bme280_read_register(
 					BME280_CTRL_HUMIDITY_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->ctrl_hum_reg = v_data_u8;
 				/* read the control
 				configuration register value*/
 				com_rslt += bme280_read_register(
 					BME280_CONFIG_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->config_reg = v_data_u8;
 		}
 	return com_rslt;
@@ -919,7 +914,7 @@ u8 v_value_u8)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_get_oversamp_pressure(
-u8 *v_value_u8)
+u8 *v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -966,7 +961,7 @@ u8 *v_value_u8)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_set_oversamp_pressure(
-u8 v_value_u8)
+u8 v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -982,9 +977,9 @@ u8 v_value_u8)
 			v_data_u8 =
 			BME280_SET_BITSLICE(v_data_u8,
 			BME280_CTRL_MEAS_REG_OVERSAMP_PRESSURE, v_value_u8);
-			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8);
+			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8, p_bme280);
 			if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-				com_rslt += bme280_set_soft_rst();
+				com_rslt += bme280_set_soft_rst(p_bme280);
 				p_bme280->delay_msec(BME280_3MS_DELAY);
 				/* write previous value of
 				configuration register*/
@@ -992,7 +987,7 @@ u8 v_value_u8)
 				com_rslt = bme280_write_register(
 					BME280_CONFIG_REG,
 				&v_pre_config_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				humidity oversampling*/
 				v_pre_ctrl_hum_value_u8 =
@@ -1000,12 +995,12 @@ u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 				&v_pre_ctrl_hum_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous and updated value of
 				control measurement register*/
 				bme280_write_register(
 					BME280_CTRL_MEAS_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			} else {
 				com_rslt = p_bme280->BME280_BUS_WRITE_FUNC(
 				p_bme280->dev_addr,
@@ -1016,18 +1011,18 @@ u8 v_value_u8)
 				/* read the control measurement register value*/
 				com_rslt = bme280_read_register(
 					BME280_CTRL_MEAS_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->ctrl_meas_reg = v_data_u8;
 				/* read the control humidity register value*/
 				com_rslt += bme280_read_register(
 					BME280_CTRL_HUMIDITY_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->ctrl_hum_reg = v_data_u8;
 				/* read the control
 				configuration register value*/
 				com_rslt += bme280_read_register(
 					BME280_CONFIG_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->config_reg = v_data_u8;
 		}
 	return com_rslt;
@@ -1058,7 +1053,7 @@ u8 v_value_u8)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_get_oversamp_humidity(
-u8 *v_value_u8)
+u8 *v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1119,7 +1114,7 @@ u8 *v_value_u8)
  *
 */
 BME280_RETURN_FUNCTION_TYPE bme280_set_oversamp_humidity(
-u8 v_value_u8)
+u8 v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1136,9 +1131,9 @@ u8 v_value_u8)
 			v_data_u8 =
 			BME280_SET_BITSLICE(v_data_u8,
 			BME280_CTRL_HUMIDITY_REG_OVERSAMP_HUMIDITY, v_value_u8);
-			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8);
+			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8, p_bme280);
 			if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-				com_rslt += bme280_set_soft_rst();
+				com_rslt += bme280_set_soft_rst(p_bme280);
 				p_bme280->delay_msec(BME280_3MS_DELAY);
 				/* write previous value of
 				configuration register*/
@@ -1146,11 +1141,11 @@ u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CONFIG_REG,
 				&v_pre_config_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write the value of control humidity*/
 				com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				control measurement register*/
 				pre_ctrl_meas_value =
@@ -1158,7 +1153,7 @@ u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
 				&pre_ctrl_meas_value,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			} else {
 				com_rslt +=
 				p_bme280->BME280_BUS_WRITE_FUNC(
@@ -1172,21 +1167,21 @@ u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
 				&pre_ctrl_meas_value,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			}
 			p_bme280->oversamp_humidity = v_value_u8;
 			/* read the control measurement register value*/
 			com_rslt += bme280_read_register(BME280_CTRL_MEAS_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_meas_reg = v_data_u8;
 			/* read the control humidity register value*/
 			com_rslt += bme280_read_register(
 			BME280_CTRL_HUMIDITY_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_hum_reg = v_data_u8;
 			/* read the control configuration register value*/
 			com_rslt += bme280_read_register(BME280_CONFIG_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->config_reg = v_data_u8;
 		}
 	return com_rslt;
@@ -1210,7 +1205,7 @@ u8 v_value_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_get_power_mode(u8 *v_power_mode_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_get_power_mode(u8 *v_power_mode_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1247,7 +1242,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_get_power_mode(u8 *v_power_mode_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_set_power_mode(u8 v_power_mode_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_set_power_mode(u8 v_power_mode_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1267,9 +1262,9 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_power_mode(u8 v_power_mode_u8)
 				BME280_CTRL_MEAS_REG_POWER_MODE,
 				v_power_mode_u8);
 				com_rslt = bme280_get_power_mode(
-					&v_prev_pow_mode_u8);
+					&v_prev_pow_mode_u8, p_bme280);
 				if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-					com_rslt += bme280_set_soft_rst();
+					com_rslt += bme280_set_soft_rst(p_bme280);
 					p_bme280->delay_msec(BME280_3MS_DELAY);
 					/* write previous value of
 					configuration register*/
@@ -1278,7 +1273,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_power_mode(u8 v_power_mode_u8)
 					com_rslt = bme280_write_register(
 						BME280_CONFIG_REG,
 					&v_pre_config_value_u8,
-					BME280_GEN_READ_WRITE_DATA_LENGTH);
+					BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 					/* write previous value of
 					humidity oversampling*/
 					v_pre_ctrl_hum_value_u8 =
@@ -1286,13 +1281,13 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_power_mode(u8 v_power_mode_u8)
 					com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 					&v_pre_ctrl_hum_value_u8,
-					BME280_GEN_READ_WRITE_DATA_LENGTH);
+					BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 					/* write previous and updated value of
 					control measurement register*/
 					com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
 					&v_mode_u8r,
-					BME280_GEN_READ_WRITE_DATA_LENGTH);
+					BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				} else {
 					com_rslt =
 					p_bme280->BME280_BUS_WRITE_FUNC(
@@ -1304,17 +1299,17 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_power_mode(u8 v_power_mode_u8)
 				/* read the control measurement register value*/
 				com_rslt = bme280_read_register(
 					BME280_CTRL_MEAS_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->ctrl_meas_reg = v_data_u8;
 				/* read the control humidity register value*/
 				com_rslt += bme280_read_register(
 					BME280_CTRL_HUMIDITY_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->ctrl_hum_reg = v_data_u8;
 				/* read the config register value*/
 				com_rslt += bme280_read_register(
 					BME280_CONFIG_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				p_bme280->config_reg = v_data_u8;
 			} else {
 			com_rslt = E_BME280_OUT_OF_RANGE;
@@ -1337,7 +1332,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_power_mode(u8 v_power_mode_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_set_soft_rst(void)
+BME280_RETURN_FUNCTION_TYPE bme280_set_soft_rst(struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1373,7 +1368,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_soft_rst(void)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_get_spi3(u8 *v_enable_disable_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_get_spi3(u8 *v_enable_disable_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1412,7 +1407,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_get_spi3(u8 *v_enable_disable_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_set_spi3(u8 v_enable_disable_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_set_spi3(u8 v_enable_disable_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1428,15 +1423,15 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_spi3(u8 v_enable_disable_u8)
 			v_data_u8 =
 			BME280_SET_BITSLICE(v_data_u8,
 			BME280_CONFIG_REG_SPI3_ENABLE, v_enable_disable_u8);
-			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8);
+			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8, p_bme280);
 			if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-				com_rslt += bme280_set_soft_rst();
+				com_rslt += bme280_set_soft_rst(p_bme280);
 				p_bme280->delay_msec(BME280_3MS_DELAY);
 				/* write previous and updated value of
 				configuration register*/
 				com_rslt += bme280_write_register(
 					BME280_CONFIG_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				humidity oversampling*/
 				v_pre_ctrl_hum_value_u8 =
@@ -1444,7 +1439,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_spi3(u8 v_enable_disable_u8)
 				com_rslt +=  bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 				&v_pre_ctrl_hum_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				control measurement register*/
 				pre_ctrl_meas_value =
@@ -1452,7 +1447,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_spi3(u8 v_enable_disable_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
 				&pre_ctrl_meas_value,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			} else {
 				com_rslt =
 				p_bme280->BME280_BUS_WRITE_FUNC(
@@ -1463,17 +1458,17 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_spi3(u8 v_enable_disable_u8)
 			/* read the control measurement register value*/
 			com_rslt += bme280_read_register(
 				BME280_CTRL_MEAS_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_meas_reg = v_data_u8;
 			/* read the control humidity register value*/
 			com_rslt += bme280_read_register(
 				BME280_CTRL_HUMIDITY_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_hum_reg = v_data_u8;
 			/* read the control configuration register value*/
 			com_rslt += bme280_read_register(
 				BME280_CONFIG_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->config_reg = v_data_u8;
 		}
 	return com_rslt;
@@ -1500,7 +1495,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_spi3(u8 v_enable_disable_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_get_filter(u8 *v_value_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_get_filter(u8 *v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1540,7 +1535,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_get_filter(u8 *v_value_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_set_filter(u8 v_value_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_set_filter(u8 v_value_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1556,15 +1551,15 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_filter(u8 v_value_u8)
 			v_data_u8 =
 			BME280_SET_BITSLICE(v_data_u8,
 			BME280_CONFIG_REG_FILTER, v_value_u8);
-			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8);
+			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8, p_bme280);
 			if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-				com_rslt += bme280_set_soft_rst();
+				com_rslt += bme280_set_soft_rst(p_bme280);
 				p_bme280->delay_msec(BME280_3MS_DELAY);
 				/* write previous and updated value of
 				configuration register*/
 				com_rslt += bme280_write_register(
 					BME280_CONFIG_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				humidity oversampling*/
 				v_pre_ctrl_hum_value_u8 =
@@ -1572,7 +1567,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_filter(u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 				&v_pre_ctrl_hum_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				control measurement register*/
 				pre_ctrl_meas_value =
@@ -1580,7 +1575,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_filter(u8 v_value_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
 				&pre_ctrl_meas_value,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			} else {
 				com_rslt =
 				p_bme280->BME280_BUS_WRITE_FUNC(
@@ -1590,16 +1585,16 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_filter(u8 v_value_u8)
 			}
 			/* read the control measurement register value*/
 			com_rslt += bme280_read_register(BME280_CTRL_MEAS_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_meas_reg = v_data_u8;
 			/* read the control humidity register value*/
 			com_rslt += bme280_read_register(
 			BME280_CTRL_HUMIDITY_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_hum_reg = v_data_u8;
 			/* read the configuration register value*/
 			com_rslt += bme280_read_register(BME280_CONFIG_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->config_reg = v_data_u8;
 		}
 	return com_rslt;
@@ -1627,7 +1622,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_filter(u8 v_value_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_get_standby_durn(u8 *v_standby_durn_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_get_standby_durn(u8 *v_standby_durn_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1678,7 +1673,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_get_standby_durn(u8 *v_standby_durn_u8)
  *
  *
 */
-BME280_RETURN_FUNCTION_TYPE bme280_set_standby_durn(u8 v_standby_durn_u8)
+BME280_RETURN_FUNCTION_TYPE bme280_set_standby_durn(u8 v_standby_durn_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1694,15 +1689,15 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_standby_durn(u8 v_standby_durn_u8)
 			v_data_u8 =
 			BME280_SET_BITSLICE(v_data_u8,
 			BME280_CONFIG_REG_TSB, v_standby_durn_u8);
-			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8);
+			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8, p_bme280);
 			if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-				com_rslt += bme280_set_soft_rst();
+				com_rslt += bme280_set_soft_rst(p_bme280);
 				p_bme280->delay_msec(BME280_3MS_DELAY);
 				/* write previous and updated value of
 				configuration register*/
 				com_rslt += bme280_write_register(
 					BME280_CONFIG_REG,
-				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				humidity oversampling*/
 				v_pre_ctrl_hum_value_u8 =
@@ -1710,7 +1705,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_standby_durn(u8 v_standby_durn_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 				&v_pre_ctrl_hum_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of control
 				measurement register*/
 				pre_ctrl_meas_value =
@@ -1718,7 +1713,7 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_standby_durn(u8 v_standby_durn_u8)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
 				&pre_ctrl_meas_value,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			} else {
 				com_rslt =
 				p_bme280->BME280_BUS_WRITE_FUNC(
@@ -1728,16 +1723,16 @@ BME280_RETURN_FUNCTION_TYPE bme280_set_standby_durn(u8 v_standby_durn_u8)
 			}
 			/* read the control measurement register value*/
 			com_rslt += bme280_read_register(BME280_CTRL_MEAS_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_meas_reg = v_data_u8;
 			/* read the control humidity register value*/
 			com_rslt += bme280_read_register(
 			BME280_CTRL_HUMIDITY_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_hum_reg = v_data_u8;
 			/* read the configuration register value*/
 			com_rslt += bme280_read_register(BME280_CONFIG_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->config_reg = v_data_u8;
 		}
 	return com_rslt;
@@ -1840,7 +1835,7 @@ return com_rslt;
 BME280_RETURN_FUNCTION_TYPE
 bme280_get_forced_uncomp_pressure_temperature_humidity(
 s32 *v_uncom_pressure_s32,
-s32 *v_uncom_temperature_s32, s32 *v_uncom_humidity_s32)
+s32 *v_uncom_temperature_s32, s32 *v_uncom_humidity_s32, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1858,9 +1853,9 @@ s32 *v_uncom_temperature_s32, s32 *v_uncom_humidity_s32)
 			v_mode_u8r =
 			BME280_SET_BITSLICE(v_mode_u8r,
 			BME280_CTRL_MEAS_REG_POWER_MODE, BME280_FORCED_MODE);
-			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8);
+			com_rslt = bme280_get_power_mode(&v_prev_pow_mode_u8, p_bme280);
 			if (v_prev_pow_mode_u8 != BME280_SLEEP_MODE) {
-				com_rslt += bme280_set_soft_rst();
+				com_rslt += bme280_set_soft_rst(p_bme280);
 				p_bme280->delay_msec(BME280_3MS_DELAY);
 				/* write previous and updated value of
 				configuration register*/
@@ -1868,7 +1863,7 @@ s32 *v_uncom_temperature_s32, s32 *v_uncom_humidity_s32)
 				com_rslt += bme280_write_register(
 					BME280_CONFIG_REG,
 				&pre_ctrl_config_value,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write previous value of
 				humidity oversampling*/
 				v_pre_ctrl_hum_value_u8 =
@@ -1876,11 +1871,11 @@ s32 *v_uncom_temperature_s32, s32 *v_uncom_humidity_s32)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 				&v_pre_ctrl_hum_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write the force mode  */
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
-				&v_mode_u8r, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_mode_u8r, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			} else {
 				/* write previous value of
 				humidity oversampling*/
@@ -1889,34 +1884,34 @@ s32 *v_uncom_temperature_s32, s32 *v_uncom_humidity_s32)
 				com_rslt += bme280_write_register(
 					BME280_CTRL_HUMIDITY_REG,
 				&v_pre_ctrl_hum_value_u8,
-				BME280_GEN_READ_WRITE_DATA_LENGTH);
+				BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 				/* write the force mode  */
 				com_rslt += bme280_write_register(
 					BME280_CTRL_MEAS_REG,
-				&v_mode_u8r, BME280_GEN_READ_WRITE_DATA_LENGTH);
+				&v_mode_u8r, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			}
-			bme280_compute_wait_time(&v_waittime_u8);
+			bme280_compute_wait_time(&v_waittime_u8, p_bme280);
 			p_bme280->delay_msec(v_waittime_u8);
 			/* read the force-mode value of pressure
 			temperature and humidity*/
 			com_rslt +=
 			bme280_read_uncomp_pressure_temperature_humidity(
 			v_uncom_pressure_s32, v_uncom_temperature_s32,
-			v_uncom_humidity_s32);
+			v_uncom_humidity_s32, p_bme280);
 
 			/* read the control humidity register value*/
 			com_rslt += bme280_read_register(
 			BME280_CTRL_HUMIDITY_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_hum_reg = v_data_u8;
 			/* read the configuration register value*/
 			com_rslt += bme280_read_register(BME280_CONFIG_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->config_reg = v_data_u8;
 
 			/* read the control measurement register value*/
 			com_rslt += bme280_read_register(BME280_CTRL_MEAS_REG,
-			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH);
+			&v_data_u8, BME280_GEN_READ_WRITE_DATA_LENGTH, p_bme280);
 			p_bme280->ctrl_meas_reg = v_data_u8;
 		}
 	return com_rslt;
@@ -1939,7 +1934,7 @@ s32 *v_uncom_temperature_s32, s32 *v_uncom_humidity_s32)
  *
  */
 BME280_RETURN_FUNCTION_TYPE bme280_write_register(u8 v_addr_u8,
-u8 *v_data_u8, u8 v_len_u8)
+u8 *v_data_u8, u8 v_len_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -1971,7 +1966,7 @@ u8 *v_data_u8, u8 v_len_u8)
  *
  */
 BME280_RETURN_FUNCTION_TYPE bme280_read_register(u8 v_addr_u8,
-u8 *v_data_u8, u8 v_len_u8)
+u8 *v_data_u8, u8 v_len_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = ERROR;
@@ -2000,7 +1995,7 @@ u8 *v_data_u8, u8 v_len_u8)
  *  @return  Return the actual temperature in floating point
  *
 */
-double bme280_compensate_temperature_double(s32 v_uncom_temperature_s32)
+double bme280_compensate_temperature_double(s32 v_uncom_temperature_s32, struct bme280_t *p_bme280)
 {
 	double v_x1_u32 = BME280_INIT_VALUE;
 	double v_x2_u32 = BME280_INIT_VALUE;
@@ -2033,7 +2028,7 @@ double bme280_compensate_temperature_double(s32 v_uncom_temperature_s32)
  *  @return  Return the actual pressure in floating point
  *
 */
-double bme280_compensate_pressure_double(s32 v_uncom_pressure_s32)
+double bme280_compensate_pressure_double(s32 v_uncom_pressure_s32, struct bme280_t *p_bme280)
 {
 	double v_x1_u32 = BME280_INIT_VALUE;
 	double v_x2_u32 = BME280_INIT_VALUE;
@@ -2078,7 +2073,7 @@ double bme280_compensate_pressure_double(s32 v_uncom_pressure_s32)
  *  @return Return the actual humidity in floating point
  *
 */
-double bme280_compensate_humidity_double(s32 v_uncom_humidity_s32)
+double bme280_compensate_humidity_double(s32 v_uncom_humidity_s32, struct bme280_t *p_bme280)
 {
 	double var_h = BME280_INIT_VALUE;
 
@@ -2120,7 +2115,7 @@ double bme280_compensate_humidity_double(s32 v_uncom_humidity_s32)
  *  @return Return the actual pressure in u32
  *
 */
-u32 bme280_compensate_pressure_int64(s32 v_uncom_pressure_s32)
+u32 bme280_compensate_pressure_int64(s32 v_uncom_pressure_s32, struct bme280_t *p_bme280)
 {
 	s64 v_x1_s64r = BME280_INIT_VALUE;
 	s64 v_x2_s64r = BME280_INIT_VALUE;
@@ -2187,12 +2182,12 @@ u32 bme280_compensate_pressure_int64(s32 v_uncom_pressure_s32)
  *
 */
 u32 bme280_compensate_pressure_int64_twentyfour_bit_output(
-s32 v_uncom_pressure_s32)
+s32 v_uncom_pressure_s32, struct bme280_t *p_bme280)
 {
 	u32 pressure = BME280_INIT_VALUE;
 
 	pressure = bme280_compensate_pressure_int64(
-	v_uncom_pressure_s32);
+	v_uncom_pressure_s32, p_bme280);
 	pressure = (u32)(pressure >> BME280_SHIFT_BIT_POSITION_BY_01_BIT);
 	return pressure;
 }
@@ -2211,7 +2206,7 @@ s32 v_uncom_pressure_s32)
  *
  */
 BME280_RETURN_FUNCTION_TYPE bme280_compute_wait_time(u8
-*v_delaytime_u8)
+*v_delaytime_u8, struct bme280_t *p_bme280)
 {
 	/* used to return the communication result*/
 	BME280_RETURN_FUNCTION_TYPE com_rslt = SUCCESS;
