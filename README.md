@@ -1,3 +1,4 @@
+This is an old, out of date BME280 driver. It has been refactored to be able to handle multiple BME280 chips. The original stored the BME280 configuration in a static variable, that's been pulled out into method arguments.
 
 CONTENTS OF THIS FILE
 =======================
